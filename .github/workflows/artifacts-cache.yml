@@ -1,0 +1,58 @@
+name: deploy website
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get code
+        uses: actions/checkot@v3
+      - name: cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: dep-node-modules-${{ hashFiles('**/package-lock.json') }}
+      - name: install dependencies
+        run: npm ci
+      - name: Lint code
+        run: npm run lint
+      - name: Test code
+        run: npm run test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get code
+        uses: actions/checkot@v3
+      - name: cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: dep-node-modules-${{ hashFiles('**/package-lock.json') }}
+      - name: install dependencies
+        run: npm ci
+      - name: Build website
+        run: npm run build
+      - name: upload artifacts
+        uses: actions/upload-artifacts@v3
+        with:
+          name: dist-files
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: get build artifacts
+        uses: actions/download-artifacts@v3
+        with:
+          name: dist-files
+      - name: output contents
+        run: ls
+      - name: deploy
+        run: echo "deploying"
